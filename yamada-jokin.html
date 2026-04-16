@@ -212,6 +212,21 @@
       <textarea id="memo" placeholder="特記事項があれば入力"></textarea>
     </div>
 
+    <!-- 日報 -->
+    <div class="section" style="margin-top:12px;">
+      <div class="section-header" onclick="toggleSection(this)">📋 日報 <span class="arrow">▼</span></div>
+      <div class="section-body">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>現状の課題点</label>
+          <textarea id="kadai" placeholder="現状の課題点を入力" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>課題点に対する改善・解決活動</label>
+          <textarea id="kaizen" placeholder="改善・解決に向けた活動内容を入力" rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+
     <div class="btn-row">
       <button type="button" class="btn btn-outline" onclick="resetForm()">リセット</button>
       <button type="button" class="btn btn-outline" onclick="previewText()" style="border-color:var(--primary);color:var(--primary);">👁 テキストプレビュー</button>
@@ -357,7 +372,7 @@ function sendToSheet(d) {
     '新規','機変','光1GB','光10GB','H5G',
     'Pカード','Gカード','GUカード','Rカード',
     'SLS系','あんセキ','詐欺バスター','ウイルスバスター',
-    'でんき','コーティング','登録件数(HS)','店舗総販','備考'];
+    'でんき','コーティング','登録件数(HS)','店舗総販','備考','現状の課題点','課題点に対する改善・解決活動'];
   const v = k => d[k]||0;
   const row = [d.date, d.name, v('outai'), v('pi'), v('mb'), v('touroku'),
     v('mnp'), v('mnp_sb'), v('mnp_au'), v('mnp_uq'), v('mnp_ym'), v('mnp_rakuten'), v('mnp_other'),
@@ -365,7 +380,7 @@ function sendToSheet(d) {
     v('pcard'), v('gcard'), v('gucard'), v('rcard'),
     v('sls'), v('anseki'), v('sagibuster'), v('virusbuster'),
     v('denki'), v('coating'), v('touroku2'), v('tenpo_souhan'),
-    d.memo||''];
+    d.memo||'', d.kadai||'', d.kaizen||''];
   fetch(GAS_URL, {
     method:'POST', mode:'no-cors',
     headers:{'Content-Type':'application/json'},
@@ -407,6 +422,8 @@ function collectData() {
   d.name = document.getElementById('reporterName').value.trim();
   d.date = document.getElementById('reportDate').value;
   d.memo = document.getElementById('memo').value.trim();
+  d.kadai = document.getElementById('kadai').value.trim();
+  d.kaizen = document.getElementById('kaizen').value.trim();
   FIELDS.forEach(([id]) => { d[id] = getVal(id); });
   return d;
 }
@@ -446,6 +463,8 @@ function editReport(id) {
   document.getElementById('reporterName').value = r.name || '';
   document.getElementById('reportDate').value = r.date || '';
   document.getElementById('memo').value = r.memo || '';
+  document.getElementById('kadai').value = r.kadai || '';
+  document.getElementById('kaizen').value = r.kaizen || '';
   FIELDS.forEach(([fid]) => {
     const el = document.getElementById('f_'+fid);
     if (el) el.value = r[fid] || '';
@@ -489,6 +508,8 @@ function buildText(d) {
   t += `コーティング：${n(d.coating)}件\n`;
   t += `登録件数:${n(d.touroku2)}件（HSのみ記載）\n`;
   t += `店舗総販:${n(d.tenpo_souhan)}台（HSのみ記載）`;
+  if (d.kadai) t += `\n\n【現状の課題点】\n${d.kadai}`;
+  if (d.kaizen) t += `\n\n【課題点に対する改善・解決活動】\n${d.kaizen}`;
   return t;
 }
 
@@ -620,7 +641,7 @@ function exportCSV() {
     '新規','機変','光1GB','光10GB','H5G',
     'Pカード','Gカード','GUカード','Rカード',
     'SLS系','あんセキ','詐欺バスター','ウイルスバスター',
-    'でんき','コーティング','登録件数(HS)','店舗総販','備考'];
+    'でんき','コーティング','登録件数(HS)','店舗総販','備考','現状の課題点','課題点に対する改善・解決活動'];
   const header = cols.join(',')+'\n';
   const rows = filteredData.map(r => {
     const v = k => r[k]||0;
@@ -629,7 +650,7 @@ function exportCSV() {
       v('shinki'),v('kihen'),v('hikari1'),v('hikari10'),v('h5g'),
       v('pcard'),v('gcard'),v('gucard'),v('rcard'),
       v('sls'),v('anseki'),v('sagibuster'),v('virusbuster'),
-      v('denki'),v('coating'),v('touroku2'),v('tenpo_souhan'),csvSafe(r.memo)].join(',');
+      v('denki'),v('coating'),v('touroku2'),v('tenpo_souhan'),csvSafe(r.memo),csvSafe(r.kadai),csvSafe(r.kaizen)].join(',');
   }).join('\n');
   const blob = new Blob([bom+header+rows],{type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob);

@@ -287,6 +287,21 @@
       <textarea id="memo" placeholder="特記事項があれば入力"></textarea>
     </div>
 
+    <!-- 日報 -->
+    <div class="section" style="margin-top:12px;">
+      <div class="section-header" onclick="toggleSection(this)">📋 日報 <span class="arrow">▼</span></div>
+      <div class="section-body">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>現状の課題点</label>
+          <textarea id="kadai" placeholder="現状の課題点を入力" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>課題点に対する改善・解決活動</label>
+          <textarea id="kaizen" placeholder="改善・解決に向けた活動内容を入力" rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+
     <div class="btn-row">
       <button type="button" class="btn btn-outline" onclick="resetForm()">リセット</button>
       <button type="button" class="btn btn-outline" onclick="previewText('daily')" style="border-color:var(--primary);color:var(--primary);">👁 日別テキスト</button>
@@ -446,12 +461,12 @@ const SHEET_NAME = 'ヤマダ電機特販';
 function sendToSheet(d) {
   const headers = ['日付','報告者','MNP','SB','a','UQ','YM','楽','その他','MNP目標',
     '新規','機変','光1GB','光10GB','H5G','Gカード','GUカード','Pカード','Rカード','でんき','登録',
-    '日計pt','ノルマpt','備考'];
+    '日計pt','ノルマpt','備考','現状の課題点','課題点に対する改善・解決活動'];
   const v = k => d[k]||0;
   const dayPt = PT_ITEMS.reduce((s,item) => s + (d[item.id]||0) * item.pt, 0);
   const row = [d.date, d.name, v('mnp'), v('mnp_sb'), v('mnp_a'), v('mnp_uq'), v('mnp_ym'), v('mnp_raku'), v('mnp_other'), v('mnp_target'),
     v('shinki'), v('kihen'), v('hikari1'), v('hikari10'), v('h5g'), v('gcard'), v('gucard'), v('pcard'), v('rcard'), v('denki'), v('touroku'),
-    dayPt, v('norma'), d.memo||''];
+    dayPt, v('norma'), d.memo||'', d.kadai||'', d.kaizen||''];
   fetch(GAS_URL, {
     method:'POST', mode:'no-cors',
     headers:{'Content-Type':'application/json'},
@@ -512,6 +527,8 @@ function collectData() {
   d.name = document.getElementById('reporterName').value.trim();
   d.date = document.getElementById('reportDate').value;
   d.memo = document.getElementById('memo').value.trim();
+  d.kadai = document.getElementById('kadai').value.trim();
+  d.kaizen = document.getElementById('kaizen').value.trim();
   d.mnp = getVal('mnp');
   d.mnp_sb = getVal('mnp_sb');
   d.mnp_a = getVal('mnp_a');
@@ -564,6 +581,8 @@ function editReport(id) {
   document.getElementById('reporterName').value = r.name || '';
   document.getElementById('reportDate').value = r.date || '';
   document.getElementById('memo').value = r.memo || '';
+  document.getElementById('kadai').value = r.kadai || '';
+  document.getElementById('kaizen').value = r.kaizen || '';
   // MNP fields
   ['mnp','mnp_sb','mnp_a','mnp_uq','mnp_ym','mnp_raku','mnp_other','mnp_target'].forEach(fid => {
     const el = document.getElementById('f_' + fid);
@@ -611,6 +630,8 @@ function buildDailyText(d) {
   const prog = norma > 0 ? ((dayPt / norma) * 100).toFixed(1) : '0';
   t += `ノルマ${norma}pt/合計${dayPt}pt\n`;
   t += `進捗率:${prog}%`;
+  if (d.kadai) t += `\n\n【現状の課題点】\n${d.kadai}`;
+  if (d.kaizen) t += `\n\n【課題点に対する改善・解決活動】\n${d.kaizen}`;
   return t;
 }
 
@@ -813,13 +834,13 @@ function exportCSV() {
   const bom = '\uFEFF';
   const cols = ['日付','報告者','MNP','SB','a','UQ','YM','楽','その他','MNP目標',
     '新規','機変','光1GB','光10GB','H5G','Gカード','GUカード','Pカード','Rカード','でんき','登録',
-    '日計pt','ノルマpt','備考'];
+    '日計pt','ノルマpt','備考','現状の課題点','課題点に対する改善・解決活動'];
   const header = cols.join(',')+'\n';
   const rows = filteredData.map(r => {
     const v = k => r[k]||0;
     return [r.date,csvSafe(r.name),v('mnp'),v('mnp_sb'),v('mnp_a'),v('mnp_uq'),v('mnp_ym'),v('mnp_raku'),v('mnp_other'),v('mnp_target'),
       v('shinki'),v('kihen'),v('hikari1'),v('hikari10'),v('h5g'),v('gcard'),v('gucard'),v('pcard'),v('rcard'),v('denki'),v('touroku'),
-      calcDayPt(r),v('norma'),csvSafe(r.memo)].join(',');
+      calcDayPt(r),v('norma'),csvSafe(r.memo),csvSafe(r.kadai),csvSafe(r.kaizen)].join(',');
   }).join('\n');
   const blob = new Blob([bom+header+rows],{type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
