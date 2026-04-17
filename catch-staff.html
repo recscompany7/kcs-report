@@ -239,31 +239,6 @@
           <div class="field-label">MNP</div>
           <input class="num-input" type="number" min="0" id="f_mnp" placeholder="0">
         </div>
-        <div style="padding:4px 0 2px 8px;font-size:12px;font-weight:600;color:var(--gray-400);">内訳</div>
-        <div class="field-row sub">
-          <div></div><div class="field-label sub-label">SB→</div>
-          <input class="num-input" type="number" min="0" id="f_mnp_sb" placeholder="0">
-        </div>
-        <div class="field-row sub">
-          <div></div><div class="field-label sub-label">a→</div>
-          <input class="num-input" type="number" min="0" id="f_mnp_a" placeholder="0">
-        </div>
-        <div class="field-row sub">
-          <div></div><div class="field-label sub-label">UQ→</div>
-          <input class="num-input" type="number" min="0" id="f_mnp_uq" placeholder="0">
-        </div>
-        <div class="field-row sub">
-          <div></div><div class="field-label sub-label">YM→</div>
-          <input class="num-input" type="number" min="0" id="f_mnp_ym" placeholder="0">
-        </div>
-        <div class="field-row sub">
-          <div></div><div class="field-label sub-label">楽天→</div>
-          <input class="num-input" type="number" min="0" id="f_mnp_rakuten" placeholder="0">
-        </div>
-        <div class="field-row sub">
-          <div></div><div class="field-label sub-label">その他→</div>
-          <input class="num-input" type="number" min="0" id="f_mnp_other" placeholder="0">
-        </div>
       </div>
     </div>
 
@@ -365,18 +340,6 @@
           <div class="field-label">でんき</div>
           <input class="num-input" type="number" min="0" id="f_denki" placeholder="0">
         </div>
-        <div class="field-row">
-          <div class="field-label">スイング</div>
-          <input class="num-input" type="number" min="0" id="f_swing" placeholder="0">
-        </div>
-        <div class="field-row">
-          <div class="field-label">スイングからの成約</div>
-          <input class="num-input" type="number" min="0" id="f_swing_seiyaku" placeholder="0">
-        </div>
-        <div class="field-row">
-          <div class="field-label">逆フリ</div>
-          <input class="num-input" type="number" min="0" id="f_gyakufuri" placeholder="0">
-        </div>
       </div>
     </div>
 
@@ -452,7 +415,7 @@
           <th>光1G</th><th>光10G</th><th>H5G</th>
           <th>Gカ</th><th>Rカ</th><th>Pカ</th><th>Uカ</th>
           <th>SLS</th><th>詐欺B</th><th>VB</th><th>あんS</th>
-          <th>電気</th><th>ｽｲﾝｸﾞ</th><th>成約</th><th>逆ﾌﾘ</th>
+          <th>電気</th>
         </tr></thead>
         <tbody id="monthBody"></tbody>
         <tfoot id="monthFoot"></tfoot>
@@ -499,7 +462,7 @@
           <th>光1G</th><th>光10G</th><th>H5G</th>
           <th>Gカ</th><th>Rカ</th><th>Pカ</th><th>Uカ</th>
           <th>SLS</th><th>詐欺B</th><th>VB</th><th>あんS</th>
-          <th>電気</th><th>ｽｲﾝｸﾞ</th><th>成約</th><th>逆ﾌﾘ</th>
+          <th>電気</th>
           <th>操作</th>
         </tr></thead>
         <tbody id="listBody"></tbody>
@@ -544,12 +507,6 @@ const FIELDS = [
   ['chakuza','着座数'],
   ['kettei','契約決定数'],
   ['mnp','MNP'],
-  ['mnp_sb','  SB→'],
-  ['mnp_a','  a→'],
-  ['mnp_uq','  UQ→'],
-  ['mnp_ym','  YM→'],
-  ['mnp_rakuten','  楽天→'],
-  ['mnp_other','  その他→'],
   ['shinki','新規'],
   ['kihen','機変'],
   ['hikari1','光1GB'],
@@ -564,9 +521,6 @@ const FIELDS = [
   ['virusbuster','ウイルスバスター'],
   ['anseki','あんセキS'],
   ['denki','でんき'],
-  ['swing','スイング'],
-  ['swing_seiyaku','スイングからの成約'],
-  ['gyakufuri','逆フリ'],
 ];
 
 // ========== Rate Calculation ==========
@@ -587,19 +541,17 @@ const SHEET_NAME = 'キャッチスタッフ';
 
 function sendToSheet(d) {
   const headers = ['日付','報告者','着座数','契約決定数','決定率',
-    'MNP','SB','a','UQ','YM','楽天','その他',
-    '新規','機変','光1GB','光10GB','H5G',
+    'MNP','新規','機変','光1GB','光10GB','H5G',
     'Gカード','Rカード','Pカード','Uカード',
     'SLS系','詐欺バスター','ウイルスバスター','あんセキS',
-    'でんき','スイング','スイングからの成約','逆フリ','備考','現状の課題点','課題点に対する改善・解決活動'];
+    'でんき','備考','現状の課題点','課題点に対する改善・解決活動'];
   const v = k => d[k]||0;
   const rate = getRate(v('chakuza'), v('kettei'));
   const row = [d.date, d.name, v('chakuza'), v('kettei'), rate,
-    v('mnp'), v('mnp_sb'), v('mnp_a'), v('mnp_uq'), v('mnp_ym'), v('mnp_rakuten'), v('mnp_other'),
-    v('shinki'), v('kihen'), v('hikari1'), v('hikari10'), v('h5g'),
+    v('mnp'), v('shinki'), v('kihen'), v('hikari1'), v('hikari10'), v('h5g'),
     v('gcard'), v('rcard'), v('pcard'), v('ucard'),
     v('sls'), v('sagibuster'), v('virusbuster'), v('anseki'),
-    v('denki'), v('swing'), v('swing_seiyaku'), v('gyakufuri'),
+    v('denki'),
     d.memo||'', d.kadai||'', d.kaizen||''];
   fetch(GAS_URL, {
     method:'POST', mode:'no-cors',
@@ -721,13 +673,6 @@ function buildText(d) {
   t += `契約決定数:${kettei}件\n`;
   t += `決定率:${rate}\n\n`;
   t += `MNP:${n(d.mnp)}件\n`;
-  t += `内訳）\n`;
-  t += `SB→${n(d.mnp_sb)}件\n`;
-  t += `a→${n(d.mnp_a)}件\n`;
-  t += `UQ→${n(d.mnp_uq)}件\n`;
-  t += `YM→${n(d.mnp_ym)}件\n`;
-  t += `楽天→${n(d.mnp_rakuten)}件\n`;
-  t += `その他→${n(d.mnp_other)}件\n`;
   t += `新規：${n(d.shinki)}件\n`;
   t += `機変：${n(d.kihen)}件\n`;
   t += `光1GB：${n(d.hikari1)}件\n`;
@@ -736,10 +681,7 @@ function buildText(d) {
   t += `Gカード：${n(d.gcard)}件\n`;
   t += `Rカード：${n(d.rcard)}件、Pカード：${n(d.pcard)}件、Uカード：${n(d.ucard)}件\n`;
   t += `SLS系：${n(d.sls)}件、詐欺バスター：${n(d.sagibuster)}件、ウイルスバスター：${n(d.virusbuster)}件、あんセキS：${n(d.anseki)}件\n`;
-  t += `でんき:${n(d.denki)}件\n`;
-  t += `スイング：${n(d.swing)}件\n`;
-  t += `スイングからの成約:${n(d.swing_seiyaku)}件\n`;
-  t += `逆フリ：${n(d.gyakufuri)}件`;
+  t += `でんき:${n(d.denki)}件`;
   if (d.kadai) t += `\n\n【現状の課題点】\n${d.kadai}`;
   if (d.kaizen) t += `\n\n【課題点に対する改善・解決活動】\n${d.kaizen}`;
   return t;
@@ -845,9 +787,6 @@ function renderList() {
       <td class="text-c">${v('virusbuster')}</td>
       <td class="text-c">${v('anseki')}</td>
       <td class="text-c">${v('denki')}</td>
-      <td class="text-c">${v('swing')}</td>
-      <td class="text-c">${v('swing_seiyaku')}</td>
-      <td class="text-c">${v('gyakufuri')}</td>
       <td style="display:flex;gap:4px;"><button class="btn btn-outline" style="font-size:12px;padding:6px 10px;" onclick="editReport(${r.id})">編集</button><button class="btn btn-danger" onclick="deleteReport(${r.id})">削除</button></td>
     </tr>`;
   }).join('');
@@ -858,21 +797,19 @@ function exportCSV() {
   if (!filteredData.length) { alert('出力するデータがありません'); return; }
   const bom = '\uFEFF';
   const cols = ['日付','報告者','着座数','契約決定数','決定率',
-    'MNP','SB','a','UQ','YM','楽天','その他',
-    '新規','機変','光1GB','光10GB','H5G',
+    'MNP','新規','機変','光1GB','光10GB','H5G',
     'Gカード','Rカード','Pカード','Uカード',
     'SLS系','詐欺バスター','ウイルスバスター','あんセキS',
-    'でんき','スイング','スイングからの成約','逆フリ','備考','現状の課題点','課題点に対する改善・解決活動'];
+    'でんき','備考','現状の課題点','課題点に対する改善・解決活動'];
   const header = cols.join(',') + '\n';
   const rows = filteredData.map(r => {
     const v = k => r[k]||0;
     const rate = getRate(v('chakuza'), v('kettei'));
     return [r.date, csvSafe(r.name), v('chakuza'), v('kettei'), rate,
-      v('mnp'), v('mnp_sb'), v('mnp_a'), v('mnp_uq'), v('mnp_ym'), v('mnp_rakuten'), v('mnp_other'),
-      v('shinki'), v('kihen'), v('hikari1'), v('hikari10'), v('h5g'),
+      v('mnp'), v('shinki'), v('kihen'), v('hikari1'), v('hikari10'), v('h5g'),
       v('gcard'), v('rcard'), v('pcard'), v('ucard'),
       v('sls'), v('sagibuster'), v('virusbuster'), v('anseki'),
-      v('denki'), v('swing'), v('swing_seiyaku'), v('gyakufuri'),
+      v('denki'),
       csvSafe(r.memo), csvSafe(r.kadai), csvSafe(r.kaizen)].join(',');
   }).join('\n');
   const blob = new Blob([bom + header + rows], { type:'text/csv;charset=utf-8;' });
@@ -1011,7 +948,7 @@ function updateMonthly() {
     <td class="text-c">${v(r,'hikari1')}</td><td class="text-c">${v(r,'hikari10')}</td><td class="text-c">${v(r,'h5g')}</td>
     <td class="text-c">${v(r,'gcard')}</td><td class="text-c">${v(r,'rcard')}</td><td class="text-c">${v(r,'pcard')}</td><td class="text-c">${v(r,'ucard')}</td>
     <td class="text-c">${v(r,'sls')}</td><td class="text-c">${v(r,'sagibuster')}</td><td class="text-c">${v(r,'virusbuster')}</td><td class="text-c">${v(r,'anseki')}</td>
-    <td class="text-c">${v(r,'denki')}</td><td class="text-c">${v(r,'swing')}</td><td class="text-c">${v(r,'swing_seiyaku')}</td><td class="text-c">${v(r,'gyakufuri')}</td>
+    <td class="text-c">${v(r,'denki')}</td>
   </tr>`;
   }).join('');
 
@@ -1023,7 +960,7 @@ function updateMonthly() {
     <td class="text-c">${sum('hikari1')}</td><td class="text-c">${sum('hikari10')}</td><td class="text-c">${sum('h5g')}</td>
     <td class="text-c">${sum('gcard')}</td><td class="text-c">${sum('rcard')}</td><td class="text-c">${sum('pcard')}</td><td class="text-c">${sum('ucard')}</td>
     <td class="text-c">${sum('sls')}</td><td class="text-c">${sum('sagibuster')}</td><td class="text-c">${sum('virusbuster')}</td><td class="text-c">${sum('anseki')}</td>
-    <td class="text-c">${sum('denki')}</td><td class="text-c">${sum('swing')}</td><td class="text-c">${sum('swing_seiyaku')}</td><td class="text-c">${sum('gyakufuri')}</td>
+    <td class="text-c">${sum('denki')}</td>
   </tr>` : '';
 }
 
