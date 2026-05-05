@@ -184,9 +184,10 @@
     <div class="section">
       <div class="section-header" onclick="toggleSection(this)">🔄 MNP <span class="arrow">▼</span></div>
       <div class="section-body">
-        <div class="field-row single">
-          <div class="field-label">MNP</div>
-          <input class="num-input" type="number" min="0" id="f_mnp" placeholder="0">
+        <div class="field-row wide">
+          <div class="field-label">MNP <span class="pt-badge">10pt</span></div>
+          <input class="num-input" type="number" min="0" id="f_mnp" placeholder="0" oninput="calcPt()">
+          <div class="pt-display" id="pt_mnp">0pt</div>
         </div>
         <div style="padding:4px 0 2px 8px;font-size:12px;font-weight:600;color:var(--gray-400);">内訳</div>
         <div class="field-row sub"><div></div><div class="field-label sub-label">SB→</div><input class="num-input" type="number" min="0" id="f_mnp_sb" placeholder="0"></div>
@@ -285,6 +286,21 @@
     <div class="form-group" style="margin-top:8px;">
       <label>備考・メモ</label>
       <textarea id="memo" placeholder="特記事項があれば入力"></textarea>
+    </div>
+
+    <!-- 日報 -->
+    <div class="section" style="margin-top:12px;">
+      <div class="section-header" onclick="toggleSection(this)">📋 日報 <span class="arrow">▼</span></div>
+      <div class="section-body">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>現状の課題点</label>
+          <textarea id="kadai" placeholder="現状の課題点を入力" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>課題点に対する改善・解決活動</label>
+          <textarea id="kaizen" placeholder="改善・解決に向けた活動内容を入力" rows="3"></textarea>
+        </div>
+      </div>
     </div>
 
     <div class="btn-row">
@@ -425,6 +441,7 @@
 <script>
 // ========== Point config ==========
 const PT_ITEMS = [
+  {id:'mnp', label:'MNP', pt:10},
   {id:'shinki', label:'新規', pt:5},
   {id:'kihen', label:'機変', pt:7},
   {id:'hikari1', label:'光1GB', pt:8},
@@ -446,12 +463,12 @@ const SHEET_NAME = 'ヤマダ電機特販';
 function sendToSheet(d) {
   const headers = ['日付','報告者','MNP','SB','a','UQ','YM','楽','その他','MNP目標',
     '新規','機変','光1GB','光10GB','H5G','Gカード','GUカード','Pカード','Rカード','でんき','登録',
-    '日計pt','ノルマpt','備考'];
+    '日計pt','ノルマpt','備考','現状の課題点','課題点に対する改善・解決活動'];
   const v = k => d[k]||0;
   const dayPt = PT_ITEMS.reduce((s,item) => s + (d[item.id]||0) * item.pt, 0);
   const row = [d.date, d.name, v('mnp'), v('mnp_sb'), v('mnp_a'), v('mnp_uq'), v('mnp_ym'), v('mnp_raku'), v('mnp_other'), v('mnp_target'),
     v('shinki'), v('kihen'), v('hikari1'), v('hikari10'), v('h5g'), v('gcard'), v('gucard'), v('pcard'), v('rcard'), v('denki'), v('touroku'),
-    dayPt, v('norma'), d.memo||''];
+    dayPt, v('norma'), d.memo||'', d.kadai||'', d.kaizen||''];
   fetch(GAS_URL, {
     method:'POST', mode:'no-cors',
     headers:{'Content-Type':'application/json'},
@@ -512,6 +529,8 @@ function collectData() {
   d.name = document.getElementById('reporterName').value.trim();
   d.date = document.getElementById('reportDate').value;
   d.memo = document.getElementById('memo').value.trim();
+  d.kadai = document.getElementById('kadai').value.trim();
+  d.kaizen = document.getElementById('kaizen').value.trim();
   d.mnp = getVal('mnp');
   d.mnp_sb = getVal('mnp_sb');
   d.mnp_a = getVal('mnp_a');
@@ -564,6 +583,8 @@ function editReport(id) {
   document.getElementById('reporterName').value = r.name || '';
   document.getElementById('reportDate').value = r.date || '';
   document.getElementById('memo').value = r.memo || '';
+  document.getElementById('kadai').value = r.kadai || '';
+  document.getElementById('kaizen').value = r.kaizen || '';
   // MNP fields
   ['mnp','mnp_sb','mnp_a','mnp_uq','mnp_ym','mnp_raku','mnp_other','mnp_target'].forEach(fid => {
     const el = document.getElementById('f_' + fid);
@@ -592,7 +613,7 @@ function deleteReport(id) {
 function buildDailyText(d) {
   const n = v => v||0;
   let t = `ヤマダ電機特販用●日別実績\n`;
-  t += `MNP：${n(d.mnp)}件\n`;
+  t += `MNP(10pt)：${n(d.mnp)}件/合計${n(d.mnp)*10}pt\n`;
   t += `内訳）\nSB→${n(d.mnp_sb)}件\na→${n(d.mnp_a)}件\nUQ→${n(d.mnp_uq)}件\nYM →${n(d.mnp_ym)}件\n楽→${n(d.mnp_raku)}件\nその他→${n(d.mnp_other)}件\n`;
   t += `目標${n(d.mnp_target)}件\n`;
   t += `新規(5Pt)：${n(d.shinki)}件/合計${n(d.shinki)*5}pt\n`;
@@ -611,6 +632,8 @@ function buildDailyText(d) {
   const prog = norma > 0 ? ((dayPt / norma) * 100).toFixed(1) : '0';
   t += `ノルマ${norma}pt/合計${dayPt}pt\n`;
   t += `進捗率:${prog}%`;
+  if (d.kadai) t += `\n\n【現状の課題点】\n${d.kadai}`;
+  if (d.kaizen) t += `\n\n【課題点に対する改善・解決活動】\n${d.kaizen}`;
   return t;
 }
 
@@ -630,7 +653,7 @@ function buildMonthlyText() {
   const prog = lastNorma > 0 ? ((cumPt / lastNorma)*100).toFixed(1) : '0';
 
   let t = `ヤマダ電機特販用●月間累積実績（${month}）\n`;
-  t += `MNP：${sum('mnp')}件\n`;
+  t += `MNP(10pt)：${sum('mnp')}件/合計${sum('mnp')*10}pt\n`;
   t += `内訳）\nSB→${sum('mnp_sb')}件\na→${sum('mnp_a')}件\nUQ→${sum('mnp_uq')}件\nYM →${sum('mnp_ym')}件\n楽→${sum('mnp_raku')}件\nその他→${sum('mnp_other')}件\n`;
   t += `目標${lastNorma > 0 ? (mReports[mReports.length-1]?.mnp_target||0) : 0}件\n`;
   t += `新規(5Pt)：${sum('shinki')}件/合計${sum('shinki')*5}pt\n`;
@@ -694,7 +717,7 @@ function updateMonthly() {
   const prog = lastNorma > 0 ? Math.min((cumPt/lastNorma)*100, 999) : 0;
 
   document.getElementById('monthSummary').innerHTML = `
-    <div class="summary-card"><div class="label">MNP</div><div class="value">${sum('mnp')}</div><div class="sub">件</div></div>
+    <div class="summary-card"><div class="label">MNP</div><div class="value">${sum('mnp')}</div><div class="sub">${sum('mnp')*10}pt</div></div>
     <div class="summary-card"><div class="label">新規</div><div class="value">${sum('shinki')}</div><div class="sub">${sum('shinki')*5}pt</div></div>
     <div class="summary-card"><div class="label">機変</div><div class="value">${sum('kihen')}</div><div class="sub">${sum('kihen')*7}pt</div></div>
     <div class="summary-card"><div class="label">光合計</div><div class="value">${sum('hikari1')+sum('hikari10')}</div><div class="sub">${sum('hikari1')*8+sum('hikari10')*10}pt</div></div>
@@ -813,13 +836,13 @@ function exportCSV() {
   const bom = '\uFEFF';
   const cols = ['日付','報告者','MNP','SB','a','UQ','YM','楽','その他','MNP目標',
     '新規','機変','光1GB','光10GB','H5G','Gカード','GUカード','Pカード','Rカード','でんき','登録',
-    '日計pt','ノルマpt','備考'];
+    '日計pt','ノルマpt','備考','現状の課題点','課題点に対する改善・解決活動'];
   const header = cols.join(',')+'\n';
   const rows = filteredData.map(r => {
     const v = k => r[k]||0;
     return [r.date,csvSafe(r.name),v('mnp'),v('mnp_sb'),v('mnp_a'),v('mnp_uq'),v('mnp_ym'),v('mnp_raku'),v('mnp_other'),v('mnp_target'),
       v('shinki'),v('kihen'),v('hikari1'),v('hikari10'),v('h5g'),v('gcard'),v('gucard'),v('pcard'),v('rcard'),v('denki'),v('touroku'),
-      calcDayPt(r),v('norma'),csvSafe(r.memo)].join(',');
+      calcDayPt(r),v('norma'),csvSafe(r.memo),csvSafe(r.kadai),csvSafe(r.kaizen)].join(',');
   }).join('\n');
   const blob = new Blob([bom+header+rows],{type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
@@ -841,7 +864,7 @@ function updateSummary() {
 
   document.getElementById('summaryCards').innerHTML = `
     <div class="summary-card"><div class="label">報告件数</div><div class="value">${reports.length}</div><div class="sub">日分</div></div>
-    <div class="summary-card"><div class="label">MNP合計</div><div class="value">${sum('mnp')}</div><div class="sub">件</div></div>
+    <div class="summary-card"><div class="label">MNP合計</div><div class="value">${sum('mnp')}</div><div class="sub">${sum('mnp')*10}pt</div></div>
     <div class="summary-card"><div class="label">新規合計</div><div class="value">${sum('shinki')}</div><div class="sub">${sum('shinki')*5}pt</div></div>
     <div class="summary-card"><div class="label">機変合計</div><div class="value">${sum('kihen')}</div><div class="sub">${sum('kihen')*7}pt</div></div>
     <div class="summary-card"><div class="label">総獲得pt</div><div class="value" style="color:var(--blue);">${totalPt}</div><div class="sub">pt</div></div>
