@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TCOMスタッフ 日別実績報告</title>
+<style>
+  :root {
+    --primary: #0055a5;
+    --primary-hover: #004080;
+    --primary-light: #dbeafe;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-300: #d1d5db;
+    --gray-400: #9ca3af; --gray-500: #6b7280; --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif; background:var(--gray-50); color:var(--gray-800); line-height:1.6; }
+  .header { background:linear-gradient(135deg,#0055a5,#0077cc); color:white; padding:20px 24px; box-shadow:var(--shadow-md); position:sticky; top:0; z-index:100; }
+  .header h1 { font-size:22px; font-weight:700; }
+  .header p { font-size:13px; opacity:0.85; margin-top:2px; }
+  .nav { display:flex; gap:4px; background:var(--gray-100); padding:4px; margin:16px; border-radius:var(--radius); }
+  .nav button { flex:1; padding:10px 12px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--gray-500); cursor:pointer; transition:all 0.2s; }
+  .nav button.active { background:white; color:var(--primary); box-shadow:var(--shadow); }
+  .container { max-width:1020px; margin:0 auto; padding:0 16px 32px; }
+  .card { background:white; border-radius:var(--radius); box-shadow:var(--shadow); padding:20px; margin-bottom:16px; }
+  .card-title { font-size:15px; font-weight:700; color:var(--gray-800); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .section { border:1.5px solid var(--gray-200); border-radius:var(--radius); margin-bottom:12px; overflow:hidden; }
+  .section-header { background:var(--gray-50); padding:10px 14px; font-weight:700; font-size:14px; color:var(--gray-700); cursor:pointer; display:flex; justify-content:space-between; align-items:center; user-select:none; }
+  .section-header:hover { background:var(--gray-100); }
+  .section-header .arrow { transition:transform 0.2s; font-size:12px; }
+  .section-header.collapsed .arrow { transform:rotate(-90deg); }
+  .section-body { padding:12px 14px; }
+  .section-body.collapsed { display:none; }
+  .field-row { display:grid; grid-template-columns:180px 1fr 74px; gap:8px; align-items:center; padding:4px 0; border-bottom:1px solid var(--gray-50); }
+  .field-row:last-child { border-bottom:none; }
+  .field-row.sub { grid-template-columns:40px 140px 1fr 74px; padding-left:12px; }
+  .field-row.plain { grid-template-columns:180px 1fr; }
+  .field-label { font-size:13px; font-weight:600; color:var(--gray-600); white-space:nowrap; }
+  .field-label.sub-label { color:var(--gray-400); font-size:12px; }
+  .pt-badge { font-size:12px; font-weight:700; color:var(--primary); text-align:right; white-space:nowrap; }
+  .pt-badge.zero { color:var(--gray-300); }
+  .col-header { font-size:11px; font-weight:700; color:var(--gray-400); text-align:center; }
+  .num-input { width:100%; padding:7px 10px; border:1.5px solid var(--gray-200); border-radius:6px; font-size:14px; text-align:center; font-family:inherit; background:white; transition:border-color 0.2s; }
+  .num-input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light); }
+  .num-input::placeholder { color:var(--gray-300); }
+  .num-input[readonly] { background:var(--gray-50); color:var(--gray-600); font-weight:700; }
+  .form-top { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  @media(max-width:600px) { .form-top { grid-template-columns:1fr; } .field-row { grid-template-columns:130px 1fr 64px; } .field-row.sub { grid-template-columns:24px 96px 1fr 64px; } .field-row.plain { grid-template-columns:130px 1fr; } }
+  .form-group { display:flex; flex-direction:column; gap:4px; }
+  .form-group label { font-size:13px; font-weight:600; color:var(--gray-600); }
+  .form-group label .req { color:var(--danger); }
+  .form-group input,.form-group textarea { padding:10px 12px; border:1.5px solid var(--gray-200); border-radius:6px; font-size:15px; font-family:inherit; background:white; }
+  .form-group input:focus,.form-group textarea:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-light); }
+  .form-group textarea { resize:vertical; min-height:60px; }
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:10px 20px; border:none; border-radius:6px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+  .btn-primary { background:var(--primary); color:white; }
+  .btn-primary:hover { background:var(--primary-hover); }
+  .btn-success { background:var(--success); color:white; }
+  .btn-outline { background:white; color:var(--gray-600); border:1.5px solid var(--gray-200); }
+  .btn-danger { background:var(--danger); color:white; font-size:12px; padding:6px 12px; }
+  .btn-row { display:flex; gap:8px; margin-top:16px; justify-content:flex-end; flex-wrap:wrap; }
+  .toast { position:fixed; top:80px; right:20px; background:var(--success); color:white; padding:12px 20px; border-radius:var(--radius); font-weight:600; font-size:14px; box-shadow:var(--shadow-md); transform:translateX(120%); transition:transform 0.3s; z-index:200; }
+  .toast.show { transform:translateX(0); }
+  .toast.warn { background:var(--danger); }
+  .tab { display:none; } .tab.active { display:block; }
+  .summary-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:16px; }
+  .summary-card { background:white; border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 16px; text-align:center; }
+  .summary-card .label { font-size:11px; color:var(--gray-500); font-weight:600; }
+  .summary-card .value { font-size:24px; font-weight:800; color:var(--gray-800); margin-top:2px; }
+  .summary-card .sub { font-size:11px; color:var(--gray-400); margin-top:2px; }
+  .goal-box { border:1.5px solid var(--primary-light); background:#f5f9ff; border-radius:var(--radius); padding:16px; }
+  .goal-top { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
+  .goal-now { font-size:30px; font-weight:800; color:var(--primary); line-height:1.2; }
+  .goal-now .unit { font-size:14px; font-weight:700; color:var(--gray-500); margin-left:2px; }
+  .goal-of { font-size:13px; font-weight:600; color:var(--gray-500); }
+  .goal-remain { font-size:15px; font-weight:800; color:var(--danger); }
+  .goal-remain.done { color:var(--success); }
+  .progress { height:14px; background:var(--gray-200); border-radius:999px; overflow:hidden; }
+  .progress > span { display:block; height:100%; width:0; background:linear-gradient(90deg,#0055a5,#0077cc); border-radius:999px; transition:width 0.3s; }
+  .progress.done > span { background:linear-gradient(90deg,#15803d,#22c55e); }
+  .hint-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .hint-label { font-size:11px; font-weight:700; color:var(--gray-500); margin-top:12px; }
+  .hint-chip { background:white; border:1px solid var(--gray-200); border-radius:999px; padding:4px 12px; font-size:12px; font-weight:600; color:var(--gray-600); }
+  .hint-chip b { color:var(--primary); }
+  .hint-chip.done { border-color:#bbf7d0; background:#f0fdf4; color:var(--success); }
+  .hint-chip.done b { color:var(--success); }
+  .person-row { display:grid; grid-template-columns:120px 1fr 150px; gap:10px; align-items:center; padding:8px 0; border-bottom:1px solid var(--gray-100); }
+  .person-row:last-child { border-bottom:none; }
+  @media(max-width:600px) { .person-row { grid-template-columns:90px 1fr; } .person-row .person-num { grid-column:1/-1; text-align:right; } }
+  .person-name { font-weight:700; font-size:13px; }
+  .person-num { font-size:12px; font-weight:700; color:var(--gray-600); text-align:right; white-space:nowrap; }
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { background:var(--gray-50); text-align:left; padding:8px 10px; font-weight:700; font-size:11px; color:var(--gray-500); border-bottom:2px solid var(--gray-200); white-space:nowrap; }
+  td { padding:8px 10px; border-bottom:1px solid var(--gray-100); white-space:nowrap; }
+  tr:hover td { background:var(--gray-50); }
+  .text-c { text-align:center; } .fw-b { font-weight:600; }
+  .pt-cell { font-weight:800; color:var(--primary); text-align:center; }
+  .empty-state { text-align:center; padding:40px 20px; color:var(--gray-400); }
+  .empty-state .icon { font-size:40px; margin-bottom:8px; }
+  .hidden { display:none; }
+  .filter-row { display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+  .filter-row .form-group { min-width:130px; }
+  .preview-card { background:var(--gray-50); border:1.5px solid var(--gray-200); border-radius:var(--radius); padding:16px; margin-top:12px; font-size:13px; line-height:1.8; white-space:pre-wrap; font-family:'SF Mono','Menlo','Consolas',monospace; }
+  .copy-btn { background:var(--gray-100); border:1px solid var(--gray-300); border-radius:6px; padding:6px 14px; font-size:13px; font-weight:600; cursor:pointer; }
+  .copy-btn:hover { background:var(--gray-200); }
+  .note { font-size:11px; color:var(--gray-400); margin-top:2px; }
+  .rate-table { font-size:12px; color:var(--gray-500); }
+  @media(max-width:600px) { #summaryGrid { grid-template-columns:1fr !important; } }
+  .goal-input { width:82px; padding:6px 8px; border:1.5px solid var(--gray-200); border-radius:6px; font-size:14px; text-align:center; font-family:inherit; font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 TCOMスタッフ 日別実績報告</h1>
+  <p>TCOMスタッフ専用 — 獲得実績とポイント進捗を入力・管理・テキスト出力</p>
+</div>
+
+<div class="nav">
+  <button class="active" onclick="switchTab('input')">📝 入力</button>
+  <button onclick="switchTab('monthly')">📅 月間累積</button>
+  <button onclick="switchTab('list')">📋 一覧</button>
+  <button onclick="switchTab('summary')">📈 集計</button>
+</div>
+
+<div class="container">
+
+<!-- ====== 入力タブ ====== -->
+<div id="tab-input" class="tab active">
+<div class="card">
+  <div class="card-title">📝 TCOMスタッフ 日別実績入力</div>
+  <form id="reportForm" novalidate onsubmit="return submitReport(event)">
+    <div class="form-top">
+      <div class="form-group">
+        <label>報告者名 <span class="req">*</span></label>
+        <input type="text" id="reporterName" required placeholder="例：田中太郎" list="nameList" oninput="updateLive()">
+        <datalist id="nameList"></datalist>
+      </div>
+      <div class="form-group">
+        <label>報告日 <span class="req">*</span></label>
+        <input type="date" id="reportDate" required onchange="updateLive()">
+      </div>
+    </div>
+
+    <!-- 光回線 -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">🌐 光回線 <span class="arrow">▼</span></div>
+      <div class="section-body">
+        <div class="field-row">
+          <div class="field-label">ドコモ光<div class="note">1件 = 1.7pt</div></div>
+          <input class="num-input" type="number" min="0" id="f_docomo" placeholder="0" oninput="updateLive()">
+          <div class="pt-badge zero" id="pt_docomo">0.0pt</div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">auひかり<div class="note">1件 = 4.0pt</div></div>
+          <input class="num-input" type="number" min="0" id="f_au" placeholder="0" oninput="updateLive()">
+          <div class="pt-badge zero" id="pt_au">0.0pt</div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">TCOM光<div class="note">1件 = 7.1pt</div></div>
+          <input class="num-input" type="number" min="0" id="f_tcom" placeholder="0" oninput="updateLive()">
+          <div class="pt-badge zero" id="pt_tcom">0.0pt</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIBMO -->
+    <div class="section">
+      <div class="section-header" onclick="toggleSection(this)">📱 LIBMO 20GB以上 <span class="arrow">▼</span></div>
+      <div class="section-body">
+        <div class="field-row">
+          <div class="field-label">LIBMO 合計<div class="note">1件 = 4.4pt（20/30/60GBが対象）</div></div>
+          <input class="num-input" type="number" id="f_libmo_total" readonly value="0">
+          <div class="pt-badge zero" id="pt_libmo">0.0pt</div>
+        </div>
+        <div style="padding:4px 0 2px 8px;font-size:12px;font-weight:600;color:var(--gray-400);">プラン内訳</div>
+        <div class="field-row sub"><div></div><div class="field-label sub-label">20GB</div><input class="num-input" type="number" min="0" id="f_libmo20" placeholder="0" oninput="updateLive()"><div class="pt-badge zero" id="pt_libmo20">0.0pt</div></div>
+        <div class="field-row sub"><div></div><div class="field-label sub-label">30GB</div><input class="num-input" type="number" min="0" id="f_libmo30" placeholder="0" oninput="updateLive()"><div class="pt-badge zero" id="pt_libmo30">0.0pt</div></div>
+        <div class="field-row sub"><div></div><div class="field-label sub-label">60GB</div><input class="num-input" type="number" min="0" id="f_libmo60" placeholder="0" oninput="updateLive()"><div class="pt-badge zero" id="pt_libmo60">0.0pt</div></div>
+      </div>
+    </div>
+
+    <!-- 活動 -->
+    <div class="section">
+      <div class="section-header" id="secActivityHeader" onclick="toggleSection(this)">📞 活動状況（必須） <span class="arrow">▼</span></div>
+      <div class="section-body">
+        <div class="field-row plain">
+          <div class="field-label">応対件数 <span class="req">*</span></div>
+          <input class="num-input" type="number" min="0" id="f_outai" placeholder="0">
+        </div>
+        <div class="field-row plain">
+          <div class="field-label">提案件数 <span class="req">*</span></div>
+          <input class="num-input" type="number" min="0" id="f_teian" placeholder="0">
+        </div>
+        <div class="field-row plain">
+          <div class="field-label">社員からの振り <span class="req">*</span></div>
+          <input class="num-input" type="number" min="0" id="f_furi" placeholder="0">
+        </div>
+        <div class="field-row plain">
+          <div class="field-label">振り戻し <span class="req">*</span></div>
+          <input class="num-input" type="number" min="0" id="f_furimodoshi" placeholder="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- 本日のポイント -->
+    <div class="goal-box" id="liveBox" style="margin-bottom:12px;">
+      <div class="goal-top">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--gray-500);">本日の獲得ポイント</div>
+          <div class="goal-now"><span id="liveToday">0.0</span><span class="unit">pt</span></div>
+        </div>
+        <div style="text-align:right;">
+          <div class="goal-of" id="liveMonthLabel">月間累計</div>
+          <div style="font-size:18px;font-weight:800;color:var(--gray-700);"><span id="liveMonth">0.0</span><span style="font-size:12px;color:var(--gray-500);"> / <span id="liveGoal">120</span>pt</span></div>
+          <div class="goal-remain" id="liveRemain">目標まで 120.0pt</div>
+        </div>
+      </div>
+      <div class="progress" id="liveBar"><span style="width:0%"></span></div>
+      <div class="hint-row" id="liveHints"></div>
+    </div>
+
+    <div class="form-group" style="margin-top:8px;">
+      <label>備考・メモ</label>
+      <textarea id="memo" placeholder="特記事項があれば入力"></textarea>
+    </div>
+
+    <!-- 日報 -->
+    <div class="section" style="margin-top:12px;">
+      <div class="section-header" onclick="toggleSection(this)">📋 日報 <span class="arrow">▼</span></div>
+      <div class="section-body">
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>現状の課題点</label>
+          <textarea id="kadai" placeholder="現状の課題点を入力" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>課題点に対する改善・解決活動</label>
+          <textarea id="kaizen" placeholder="改善・解決に向けた活動内容を入力" rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button type="button" class="btn btn-outline" onclick="resetForm()">リセット</button>
+      <button type="button" class="btn btn-outline" onclick="previewText()" style="border-color:var(--primary);color:var(--primary);">👁 テキストプレビュー</button>
+      <button type="submit" class="btn btn-primary" id="submitBtn">✅ 報告を登録</button>
+    </div>
+  </form>
+
+  <div id="previewArea" class="hidden" style="margin-top:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-weight:700;font-size:14px;">📋 テキスト出力</span>
+      <button class="copy-btn" onclick="copyPreview()">📋 コピー</button>
+    </div>
+    <div class="preview-card" id="previewText"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">🕐 直近の報告（5件）</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>日付</th><th>報告者</th><th>ドコモ光</th><th>auひかり</th><th>TCOM光</th><th>LIBMO</th><th>獲得pt</th></tr></thead>
+      <tbody id="recentBody"></tbody>
+    </table>
+  </div>
+  <div id="recentEmpty" class="empty-state hidden"><div class="icon">📭</div><p>まだ報告がありません</p></div>
+</div>
+</div>
+
+<!-- ====== 月間累積タブ ====== -->
+<div id="tab-monthly" class="tab">
+  <div class="card">
+    <div class="card-title">🎯 目標進捗</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+      <label style="font-weight:600;font-size:13px;">対象月:</label>
+      <select id="monthSelect" onchange="updateMonthly()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:14px;"></select>
+      <label style="font-weight:600;font-size:13px;margin-left:4px;">報告者:</label>
+      <select id="monthName" onchange="updateMonthly()" style="padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:14px;"><option value="">全員</option></select>
+      <label style="font-weight:600;font-size:13px;margin-left:4px;">月間目標:</label>
+      <input type="number" min="0" step="0.1" id="goalInput" class="goal-input" onchange="saveGoal()">
+      <span style="font-size:13px;font-weight:600;color:var(--gray-500);">pt</span>
+    </div>
+    <div id="goalArea"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📅 月間累積実績</div>
+    <div class="summary-row" id="monthSummary"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>日付</th><th>報告者</th>
+          <th>ドコモ光</th><th>auひかり</th><th>TCOM光</th>
+          <th>LIBMO20</th><th>LIBMO30</th><th>LIBMO60</th><th>LIBMO計</th>
+          <th>応対</th><th>提案</th><th>振り</th><th>振り戻し</th><th>獲得pt</th>
+        </tr></thead>
+        <tbody id="monthBody"></tbody>
+        <tfoot id="monthFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 一覧タブ ====== -->
+<div id="tab-list" class="tab">
+  <div class="card">
+    <div class="card-title">🔍 絞り込み</div>
+    <div class="filter-row">
+      <div class="form-group"><label>報告者</label><select id="filterName" style="padding:8px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:14px;"><option value="">全員</option></select></div>
+      <div class="form-group"><label>開始日</label><input type="date" id="filterFrom"></div>
+      <div class="form-group"><label>終了日</label><input type="date" id="filterTo"></div>
+      <button class="btn btn-primary" onclick="applyFilter()">検索</button>
+      <button class="btn btn-outline" onclick="clearFilter()">クリア</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between;">
+      <span>📋 実績一覧 (<span id="resultCount">0</span>件)</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-success" onclick="exportCSV()">📥 CSV出力</button>
+        <button class="btn btn-outline" onclick="exportJSON()" style="font-size:13px;">💾 データ保存</button>
+        <label class="btn btn-outline" style="font-size:13px;cursor:pointer;">📂 データ読込<input type="file" accept=".json" onchange="importJSON(event)" style="display:none;"></label>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>日付</th><th>報告者</th>
+          <th>ドコモ光</th><th>auひかり</th><th>TCOM光</th>
+          <th>LIBMO20</th><th>LIBMO30</th><th>LIBMO60</th><th>LIBMO計</th>
+          <th>応対</th><th>提案</th><th>振り</th><th>振り戻し</th><th>獲得pt</th><th>操作</th>
+        </tr></thead>
+        <tbody id="listBody"></tbody>
+      </table>
+    </div>
+    <div id="listEmpty" class="empty-state hidden"><div class="icon">📭</div><p>該当するデータがありません</p></div>
+  </div>
+</div>
+
+<!-- ====== 集計タブ ====== -->
+<div id="tab-summary" class="tab">
+  <div class="summary-row" id="summaryCards"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="summaryGrid">
+    <div class="card">
+      <div class="card-title">📊 日別ポイント推移</div>
+      <div style="height:200px;display:flex;align-items:flex-end;gap:8px;padding:0 4px;" id="dailyChart"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏆 ポイントランキング</div>
+      <ul style="list-style:none;" id="rankingList"></ul>
+      <div id="rankingEmpty" class="empty-state hidden" style="padding:24px;"><p>データがありません</p></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📂 項目別合計</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>項目</th><th>単価</th><th>件数合計</th><th>ポイント合計</th></tr></thead>
+        <tbody id="itemBody"></tbody>
+        <tfoot id="itemFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ========== Points ==========
+const POINTS = { docomo:1.7, au:4.0, tcom:7.1, libmo:4.4 };
+const DEFAULT_GOAL = 120;
+// 月間の目安件数（変更する場合はここの数字を書き換える）
+const TARGETS = { tcom:5, docomo:30, au:7, libmo:3 };
+const ITEMS = [['tcom','TCOM光'],['docomo','ドコモ光'],['au','auひかり'],['libmo','LIBMO']];
+
+// ========== Fields ==========
+const FIELDS = [
+  ['docomo','ドコモ光'],['au','auひかり'],['tcom','TCOM光'],
+  ['libmo20','LIBMO 20GB'],['libmo30','LIBMO 30GB'],['libmo60','LIBMO 60GB'],
+  ['outai','応対件数'],['teian','提案件数'],['furi','社員からの振り'],['furimodoshi','振り戻し'],
+];
+
+function r1(n) { return Math.round(n*10)/10; }
+function fmt(n) { return r1(n).toFixed(1); }
+function libmoTotal(d) { return (d.libmo20||0)+(d.libmo30||0)+(d.libmo60||0); }
+function calcPt(d) {
+  return r1((d.docomo||0)*POINTS.docomo + (d.au||0)*POINTS.au + (d.tcom||0)*POINTS.tcom + libmoTotal(d)*POINTS.libmo);
+}
+
+// ========== Google Sheets ==========
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbx6eVYlDBOQUxafPBiZrWWFe99-dJ9LWTRD5vDDI4WItr83jCwLP1bNzCknxicYUBk/exec';
+const SHEET_NAME = 'TCOMスタッフ';
+
+const REQUIRED_NUM = [['outai','応対件数'],['teian','提案件数'],['furi','社員からの振り'],['furimodoshi','振り戻し']];
+
+const COLS = ['日付','報告者','ドコモ光','auひかり','TCOM光','LIBMO20GB','LIBMO30GB','LIBMO60GB','LIBMO計','応対件数','提案件数','社員からの振り','振り戻し','獲得pt','備考','現状の課題点','課題点に対する改善・解決活動'];
+
+function rowOf(d) {
+  const v = k => d[k]||0;
+  return [d.date, d.name, v('docomo'), v('au'), v('tcom'),
+    v('libmo20'), v('libmo30'), v('libmo60'), libmoTotal(d),
+    v('outai'), v('teian'), v('furi'), v('furimodoshi'), calcPt(d),
+    d.memo||'', d.kadai||'', d.kaizen||''];
+}
+
+function sendToSheet(d) {
+  fetch(GAS_URL, {
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sheetName: SHEET_NAME, headers: COLS, row: rowOf(d) })
+  }).catch(err => console.log('Sheet送信エラー:', err));
+}
+
+// ========== Data ==========
+let reports = [];
+try { reports = JSON.parse(localStorage.getItem('tcomStaff') || '[]'); } catch(e) {}
+let filteredData = [];
+let editingId = null;
+function save() { try { localStorage.setItem('tcomStaff', JSON.stringify(reports)); } catch(e) {} }
+
+function getGoal() {
+  const g = Number(localStorage.getItem('tcomGoal'));
+  return g > 0 ? g : DEFAULT_GOAL;
+}
+function saveGoal() {
+  const g = Number(document.getElementById('goalInput').value);
+  if (g > 0) { try { localStorage.setItem('tcomGoal', g); } catch(e) {} }
+  else document.getElementById('goalInput').value = getGoal();
+  updateMonthly(); updateLive();
+}
+
+// ========== Init ==========
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('reportDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('goalInput').value = getGoal();
+  buildMonthSelect();
+  updateAll();
+  updateLive();
+});
+
+// ========== Tabs ==========
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.nav button').forEach((b,i) => {
+    b.classList.toggle('active', ['input','monthly','list','summary'][i] === tab);
+  });
+  if (tab === 'monthly') updateMonthly();
+  if (tab === 'list') applyFilter();
+  if (tab === 'summary') updateSummary();
+}
+function toggleSection(el) { el.classList.toggle('collapsed'); el.nextElementSibling.classList.toggle('collapsed'); }
+
+// ========== Form ==========
+function getVal(id) { return Number(document.getElementById('f_'+id)?.value) || 0; }
+function collectData() {
+  const d = { id:Date.now() };
+  d.name = document.getElementById('reporterName').value.trim();
+  d.date = document.getElementById('reportDate').value;
+  d.memo = document.getElementById('memo').value.trim();
+  d.kadai = document.getElementById('kadai').value.trim();
+  d.kaizen = document.getElementById('kaizen').value.trim();
+  FIELDS.forEach(([id]) => { d[id] = getVal(id); });
+  return d;
+}
+
+// ========== Live progress ==========
+function monthPtOf(name, month, excludeId) {
+  return r1(reports
+    .filter(r => r.name === name && (r.date||'').startsWith(month) && r.id !== excludeId)
+    .reduce((s,r) => s + calcPt(r), 0));
+}
+
+function countsOf(list) {
+  const c = { docomo:0, au:0, tcom:0, libmo:0 };
+  list.forEach(r => {
+    c.docomo += r.docomo||0; c.au += r.au||0; c.tcom += r.tcom||0; c.libmo += libmoTotal(r);
+  });
+  return c;
+}
+
+function targetChips(counts) {
+  const chips = ITEMS.map(([k,label]) => {
+    const c = counts[k]||0, t = TARGETS[k], rem = Math.max(t-c, 0);
+    return `<span class="hint-chip${rem===0?' done':''}">${label} <b>${c}</b>/${t}件${rem>0?`（あと${rem}）`:' 達成'}</span>`;
+  }).join('');
+  return `<div class="hint-label">月間の目安件数（累計／目安）</div><div class="hint-row">${chips}</div>`;
+}
+
+function setBadge(id, cnt, unit) {
+  const el = document.getElementById(id);
+  const pt = r1(cnt*unit);
+  el.textContent = fmt(pt)+'pt';
+  el.classList.toggle('zero', pt === 0);
+}
+
+function updateLive() {
+  const d = collectData();
+  const lt = libmoTotal(d);
+  document.getElementById('f_libmo_total').value = lt;
+  setBadge('pt_docomo', d.docomo, POINTS.docomo);
+  setBadge('pt_au', d.au, POINTS.au);
+  setBadge('pt_tcom', d.tcom, POINTS.tcom);
+  setBadge('pt_libmo', lt, POINTS.libmo);
+  setBadge('pt_libmo20', d.libmo20, POINTS.libmo);
+  setBadge('pt_libmo30', d.libmo30, POINTS.libmo);
+  setBadge('pt_libmo60', d.libmo60, POINTS.libmo);
+
+  const today = calcPt(d);
+  document.getElementById('liveToday').textContent = fmt(today);
+
+  const goal = getGoal();
+  document.getElementById('liveGoal').textContent = fmt(goal).replace(/\.0$/,'');
+
+  const month = (d.date||'').slice(0,7);
+  const hasCtx = d.name && month;
+  const past = hasCtx ? monthPtOf(d.name, month, editingId) : 0;
+  const total = r1(past + today);
+  const remain = r1(Math.max(goal - total, 0));
+
+  document.getElementById('liveMonthLabel').textContent = hasCtx
+    ? `${Number(month.slice(5))}月 ${d.name} の累計（本日分を含む）` : '月間累計';
+  document.getElementById('liveMonth').textContent = fmt(total);
+
+  const remEl = document.getElementById('liveRemain');
+  remEl.textContent = remain > 0 ? `目標まで あと ${fmt(remain)}pt` : `🎉 目標達成（+${fmt(total-goal)}pt）`;
+  remEl.classList.toggle('done', remain === 0);
+
+  const bar = document.getElementById('liveBar');
+  bar.firstElementChild.style.width = Math.min(total/goal*100,100)+'%';
+  bar.classList.toggle('done', remain === 0);
+
+  document.getElementById('liveHints').innerHTML = hasCtx
+    ? targetChips(countsOf(reports.filter(r => r.name===d.name && (r.date||'').startsWith(month) && r.id !== editingId).concat([d])))
+    : targetChips(countsOf([d]));
+}
+
+function submitReport(e) {
+  e.preventDefault();
+  const d = collectData();
+  const missing = [];
+  if (!d.name) missing.push('報告者名');
+  if (!d.date) missing.push('報告日');
+  REQUIRED_NUM.forEach(([id,label]) => {
+    if ((document.getElementById('f_'+id).value||'').trim() === '') missing.push(label);
+  });
+  if (missing.length) {
+    const h = document.getElementById('secActivityHeader');
+    if (h.classList.contains('collapsed')) toggleSection(h);
+    showToast('⚠️ 未入力：' + missing.join('・'), true);
+    const first = REQUIRED_NUM.find(([id]) => (document.getElementById('f_'+id).value||'').trim() === '');
+    const focusEl = !d.name ? document.getElementById('reporterName')
+      : !d.date ? document.getElementById('reportDate')
+      : first ? document.getElementById('f_'+first[0]) : null;
+    if (focusEl) { focusEl.focus(); focusEl.scrollIntoView?.({block:'center', behavior:'smooth'}); }
+    return false;
+  }
+  if (editingId) {
+    const idx = reports.findIndex(r => r.id === editingId);
+    if (idx !== -1) { d.id = editingId; reports[idx] = d; }
+    editingId = null;
+    document.getElementById('submitBtn').textContent = '✅ 報告を登録';
+    showToast('✏️ 報告を更新しました！');
+  } else {
+    reports.push(d);
+    sendToSheet(d);
+    const month = d.date.slice(0,7);
+    const total = monthPtOf(d.name, month, null);
+    showToast(total >= getGoal() ? '🎉 月間目標を達成しました！' : `✅ 登録完了（本日 ${fmt(calcPt(d))}pt）`);
+  }
+  save(); resetForm();
+  document.getElementById('reportDate').value = new Date().toISOString().slice(0,10);
+  updateAll(); applyFilter(); updateLive();
+}
+
+function resetForm() {
+  editingId = null;
+  document.getElementById('reportForm').reset();
+  document.getElementById('reportDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('previewArea').classList.add('hidden');
+  document.getElementById('submitBtn').textContent = '✅ 報告を登録';
+  updateLive();
+}
+
+function editReport(id) {
+  const r = reports.find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
+  document.getElementById('reporterName').value = r.name || '';
+  document.getElementById('reportDate').value = r.date || '';
+  document.getElementById('memo').value = r.memo || '';
+  document.getElementById('kadai').value = r.kadai || '';
+  document.getElementById('kaizen').value = r.kaizen || '';
+  FIELDS.forEach(([fid]) => {
+    const el = document.getElementById('f_'+fid);
+    if (el) el.value = r[fid] || '';
+  });
+  document.getElementById('submitBtn').textContent = '✏️ 報告を更新';
+  switchTab('input');
+  updateLive();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function deleteReport(id) {
+  if (!confirm('この報告を削除してもよいですか？')) return;
+  reports = reports.filter(r => r.id !== id);
+  save(); updateAll(); applyFilter(); updateLive();
+}
+
+// ========== Text ==========
+function buildText(d) {
+  const n = v => v||0;
+  const lt = libmoTotal(d);
+  const today = calcPt(d);
+  const goal = getGoal();
+  const month = (d.date||'').slice(0,7);
+  let t = `●日別実績（TCOM）\n`;
+  if (d.date) t += `${d.date}　${d.name||''}\n`;
+  t += `ドコモ光：${n(d.docomo)}件（${fmt(n(d.docomo)*POINTS.docomo)}pt）\n`;
+  t += `auひかり：${n(d.au)}件（${fmt(n(d.au)*POINTS.au)}pt）\n`;
+  t += `TCOM光：${n(d.tcom)}件（${fmt(n(d.tcom)*POINTS.tcom)}pt）\n`;
+  t += `LIBMO20GB以上：${lt}件（${fmt(lt*POINTS.libmo)}pt）\n`;
+  t += `内訳）20GB→${n(d.libmo20)}件／30GB→${n(d.libmo30)}件／60GB→${n(d.libmo60)}件\n`;
+  t += `応対件数：${n(d.outai)}件\n`;
+  t += `提案件数：${n(d.teian)}件\n`;
+  t += `社員からの振り：${n(d.furi)}件\n`;
+  t += `振り戻し：${n(d.furimodoshi)}件\n`;
+  t += `──────────\n`;
+  t += `本日の獲得：${fmt(today)}pt\n`;
+  if (d.name && month) {
+    const total = r1(monthPtOf(d.name, month, editingId) + today);
+    const remain = r1(Math.max(goal - total, 0));
+    t += `月間累計：${fmt(total)}pt ／ 目標${fmt(goal).replace(/\.0$/,'')}pt\n`;
+    t += remain > 0
+      ? `目標まで：あと${fmt(remain)}pt\n`
+      : `目標達成！（+${fmt(total-goal)}pt）\n`;
+    const mc = countsOf(reports.filter(r => r.name===d.name && (r.date||'').startsWith(month) && r.id !== editingId).concat([d]));
+    t += `目安件数：` + ITEMS.map(([k,label]) => `${label} ${mc[k]}/${TARGETS[k]}件`).join('／');
+  }
+  if (d.memo) t += `\n\n【備考】\n${d.memo}`;
+  if (d.kadai) t += `\n\n【現状の課題点】\n${d.kadai}`;
+  if (d.kaizen) t += `\n\n【課題点に対する改善・解決活動】\n${d.kaizen}`;
+  return t;
+}
+
+function previewText() {
+  document.getElementById('previewText').textContent = buildText(collectData());
+  document.getElementById('previewArea').classList.remove('hidden');
+}
+function copyPreview() {
+  navigator.clipboard.writeText(document.getElementById('previewText').textContent).then(() => showToast('📋 コピーしました！'));
+}
+
+// ========== Recent ==========
+function updateRecent() {
+  const sorted = [...reports].sort((a,b) => b.id-a.id).slice(0,5);
+  const body = document.getElementById('recentBody');
+  const empty = document.getElementById('recentEmpty');
+  if (!sorted.length) { body.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  body.innerHTML = sorted.map(r => {
+    const v = k => r[k]||0;
+    return `<tr><td>${r.date}</td><td>${esc(r.name)}</td>
+      <td class="text-c">${v('docomo')}</td><td class="text-c">${v('au')}</td><td class="text-c">${v('tcom')}</td>
+      <td class="text-c">${libmoTotal(r)}</td><td class="pt-cell">${fmt(calcPt(r))}</td></tr>`;
+  }).join('');
+}
+
+// ========== Name ==========
+function updateNameList() {
+  const names = [...new Set(reports.map(r => r.name))].sort();
+  document.getElementById('nameList').innerHTML = names.map(n => `<option value="${esc(n)}">`).join('');
+  ['filterName','monthName'].forEach(selId => {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">全員</option>' + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+    sel.value = cur;
+  });
+}
+
+// ========== Monthly ==========
+function buildMonthSelect() {
+  const sel = document.getElementById('monthSelect');
+  const now = new Date();
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    sel.innerHTML += `<option value="${val}">${d.getFullYear()}年${d.getMonth()+1}月</option>`;
+  }
+}
+
+function daysLeftIn(month) {
+  const today = new Date();
+  const cur = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  if (month !== cur) return null;
+  const last = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+  return last - today.getDate() + 1;
+}
+
+function renderGoalArea(month, nf, mr) {
+  const goal = getGoal();
+  const area = document.getElementById('goalArea');
+  const left = daysLeftIn(month);
+
+  if (nf) {
+    const total = r1(mr.reduce((s,r) => s+calcPt(r), 0));
+    const remain = r1(Math.max(goal-total,0));
+    const pace = (left && remain > 0) ? `<span class="hint-chip">残り${left}日 → 1日あたり <b>${fmt(remain/left)}pt</b></span>` : '';
+    area.innerHTML = `
+      <div class="goal-box">
+        <div class="goal-top">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--gray-500);">${esc(nf)} の月間累計</div>
+            <div class="goal-now">${fmt(total)}<span class="unit">pt</span></div>
+          </div>
+          <div style="text-align:right;">
+            <div class="goal-of">目標 ${fmt(goal).replace(/\.0$/,'')}pt ／ 達成率 ${Math.round(total/goal*100)}%</div>
+            <div class="goal-remain ${remain===0?'done':''}">${remain>0?`目標まで あと ${fmt(remain)}pt`:`🎉 目標達成（+${fmt(total-goal)}pt）`}</div>
+          </div>
+        </div>
+        <div class="progress ${remain===0?'done':''}"><span style="width:${Math.min(total/goal*100,100)}%"></span></div>
+        ${pace?`<div class="hint-row">${pace}</div>`:''}
+        ${targetChips(countsOf(mr))}
+      </div>`;
+    return;
+  }
+
+  const names = [...new Set(mr.map(r => r.name))];
+  if (!names.length) { area.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>この月のデータがありません</p></div>'; return; }
+  const teamTotal = r1(mr.reduce((s,r) => s+calcPt(r), 0));
+  const rows = names.map(n => {
+    const pt = r1(mr.filter(r => r.name===n).reduce((s,r) => s+calcPt(r), 0));
+    const remain = r1(Math.max(goal-pt,0));
+    return { n, pt, remain };
+  }).sort((a,b) => b.pt-a.pt);
+
+  area.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:13px;font-weight:700;color:var(--gray-600);">メンバー別 目標進捗（1人 ${fmt(goal).replace(/\.0$/,'')}pt）${left?`／今月残り${left}日`:''}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--gray-500);">チーム合計 <span style="color:var(--primary);font-size:17px;font-weight:800;">${fmt(teamTotal)}</span>pt ／ ${fmt(goal*names.length).replace(/\.0$/,'')}pt</div>
+    </div>
+    ${rows.map(r => `
+      <div class="person-row">
+        <div class="person-name">${esc(r.n)}</div>
+        <div class="progress ${r.remain===0?'done':''}"><span style="width:${Math.min(r.pt/goal*100,100)}%"></span></div>
+        <div class="person-num">${fmt(r.pt)}pt ／ ${r.remain>0?`<span style="color:var(--danger);">残り${fmt(r.remain)}pt</span>`:'<span style="color:var(--success);">達成 🎉</span>'}</div>
+      </div>`).join('')}`;
+}
+
+function updateMonthly() {
+  const month = document.getElementById('monthSelect').value;
+  const nf = document.getElementById('monthName').value;
+  const mr = reports.filter(r => (r.date||'').startsWith(month) && (!nf || r.name === nf)).sort((a,b) => a.date.localeCompare(b.date));
+  const sum = k => mr.reduce((s,r) => s+(r[k]||0), 0);
+  const sumLibmo = () => mr.reduce((s,r) => s+libmoTotal(r), 0);
+  const sumPt = () => r1(mr.reduce((s,r) => s+calcPt(r), 0));
+
+  renderGoalArea(month, nf, mr);
+
+  document.getElementById('monthSummary').innerHTML = mr.length ? `
+    <div class="summary-card"><div class="label">獲得pt</div><div class="value" style="color:var(--primary);">${fmt(sumPt())}</div><div class="sub">${mr.length}日分</div></div>
+    <div class="summary-card"><div class="label">ドコモ光</div><div class="value">${sum('docomo')}</div><div class="sub">${fmt(sum('docomo')*POINTS.docomo)}pt</div></div>
+    <div class="summary-card"><div class="label">auひかり</div><div class="value">${sum('au')}</div><div class="sub">${fmt(sum('au')*POINTS.au)}pt</div></div>
+    <div class="summary-card"><div class="label">TCOM光</div><div class="value">${sum('tcom')}</div><div class="sub">${fmt(sum('tcom')*POINTS.tcom)}pt</div></div>
+    <div class="summary-card"><div class="label">LIBMO 20GB以上</div><div class="value">${sumLibmo()}</div><div class="sub">${fmt(sumLibmo()*POINTS.libmo)}pt</div></div>
+  ` : '';
+
+  const v = (r,k) => r[k]||0;
+  document.getElementById('monthBody').innerHTML = mr.map(r => `<tr>
+    <td>${r.date}</td><td>${esc(r.name)}</td>
+    <td class="text-c">${v(r,'docomo')}</td><td class="text-c">${v(r,'au')}</td><td class="text-c">${v(r,'tcom')}</td>
+    <td class="text-c">${v(r,'libmo20')}</td><td class="text-c">${v(r,'libmo30')}</td><td class="text-c">${v(r,'libmo60')}</td><td class="text-c fw-b">${libmoTotal(r)}</td>
+    <td class="text-c">${v(r,'outai')}</td><td class="text-c">${v(r,'teian')}</td><td class="text-c">${v(r,'furi')}</td><td class="text-c">${v(r,'furimodoshi')}</td>
+    <td class="pt-cell">${fmt(calcPt(r))}</td>
+  </tr>`).join('');
+
+  document.getElementById('monthFoot').innerHTML = mr.length ? `<tr style="font-weight:700;background:var(--gray-50);">
+    <td colspan="2">累計</td>
+    <td class="text-c">${sum('docomo')}</td><td class="text-c">${sum('au')}</td><td class="text-c">${sum('tcom')}</td>
+    <td class="text-c">${sum('libmo20')}</td><td class="text-c">${sum('libmo30')}</td><td class="text-c">${sum('libmo60')}</td><td class="text-c">${sumLibmo()}</td>
+    <td class="text-c">${sum('outai')}</td><td class="text-c">${sum('teian')}</td><td class="text-c">${sum('furi')}</td><td class="text-c">${sum('furimodoshi')}</td>
+    <td class="pt-cell">${fmt(sumPt())}</td>
+  </tr>` : '';
+}
+
+// ========== Filter ==========
+function applyFilter() {
+  const name = document.getElementById('filterName').value;
+  const from = document.getElementById('filterFrom').value;
+  const to = document.getElementById('filterTo').value;
+  filteredData = reports.filter(r => {
+    if (name && r.name !== name) return false;
+    if (from && r.date < from) return false;
+    if (to && r.date > to) return false;
+    return true;
+  }).sort((a,b) => b.date.localeCompare(a.date));
+  renderList();
+}
+function clearFilter() { document.getElementById('filterName').value=''; document.getElementById('filterFrom').value=''; document.getElementById('filterTo').value=''; applyFilter(); }
+
+function renderList() {
+  const body = document.getElementById('listBody');
+  const empty = document.getElementById('listEmpty');
+  document.getElementById('resultCount').textContent = filteredData.length;
+  if (!filteredData.length) { body.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  body.innerHTML = filteredData.map(r => {
+    const v = k => r[k]||0;
+    return `<tr>
+      <td>${r.date}</td><td>${esc(r.name)}</td>
+      <td class="text-c">${v('docomo')}</td><td class="text-c">${v('au')}</td><td class="text-c">${v('tcom')}</td>
+      <td class="text-c">${v('libmo20')}</td><td class="text-c">${v('libmo30')}</td><td class="text-c">${v('libmo60')}</td><td class="text-c fw-b">${libmoTotal(r)}</td>
+      <td class="text-c">${v('outai')}</td><td class="text-c">${v('teian')}</td><td class="text-c">${v('furi')}</td><td class="text-c">${v('furimodoshi')}</td>
+      <td class="pt-cell">${fmt(calcPt(r))}</td>
+      <td style="display:flex;gap:4px;"><button class="btn btn-outline" style="font-size:12px;padding:6px 10px;" onclick="editReport(${r.id})">編集</button><button class="btn btn-danger" onclick="deleteReport(${r.id})">削除</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ========== CSV ==========
+function exportCSV() {
+  if (!filteredData.length) { alert('出力するデータがありません'); return; }
+  const bom = '\uFEFF';
+  const header = COLS.join(',')+'\n';
+  const rows = filteredData.map(r => rowOf(r).map(x => typeof x === 'string' ? csvSafe(x) : x).join(',')).join('\n');
+  const blob = new Blob([bom+header+rows],{type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`TCOMスタッフ_実績_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  showToast('📥 CSVを出力しました！');
+}
+function csvSafe(s) { if(!s)return''; return s.includes(',')||s.includes('"')||s.includes('\n')?'"'+s.replace(/"/g,'""')+'"':s; }
+
+// ========== Summary ==========
+function updateSummary() {
+  if (!reports.length) {
+    document.getElementById('summaryCards').innerHTML='';
+    document.getElementById('dailyChart').innerHTML='<div class="empty-state" style="width:100%;"><p>データがありません</p></div>';
+    document.getElementById('rankingList').innerHTML=''; document.getElementById('rankingEmpty').classList.remove('hidden');
+    document.getElementById('itemBody').innerHTML=''; document.getElementById('itemFoot').innerHTML=''; return;
+  }
+  const sum = k => reports.reduce((s,r) => s+(r[k]||0), 0);
+  const totalLibmo = reports.reduce((s,r) => s+libmoTotal(r), 0);
+  const totalPt = r1(reports.reduce((s,r) => s+calcPt(r), 0));
+  document.getElementById('summaryCards').innerHTML = `
+    <div class="summary-card"><div class="label">報告件数</div><div class="value">${reports.length}</div><div class="sub">日分</div></div>
+    <div class="summary-card"><div class="label">獲得pt合計</div><div class="value" style="color:var(--primary);">${fmt(totalPt)}</div><div class="sub">pt</div></div>
+    <div class="summary-card"><div class="label">光回線 合計</div><div class="value">${sum('docomo')+sum('au')+sum('tcom')}</div><div class="sub">件</div></div>
+    <div class="summary-card"><div class="label">LIBMO 合計</div><div class="value">${totalLibmo}</div><div class="sub">件</div></div>
+  `;
+
+  const byDate = {};
+  reports.forEach(r => { byDate[r.date] = r1((byDate[r.date]||0) + calcPt(r)); });
+  const dates = Object.keys(byDate).sort().slice(-10);
+  const maxVal = Math.max(...dates.map(d => byDate[d]),1);
+  document.getElementById('dailyChart').innerHTML = dates.map(d => {
+    const h = Math.max((byDate[d]/maxVal)*160,4);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:36px;">
+      <div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:4px;">${fmt(byDate[d])}</div>
+      <div style="width:100%;max-width:40px;height:${h}px;background:linear-gradient(180deg,#0055a5,#0077cc);border-radius:4px 4px 0 0;"></div>
+      <div style="font-size:10px;color:var(--gray-500);margin-top:4px;">${d.slice(5)}</div>
+    </div>`;
+  }).join('');
+
+  const byName = {};
+  reports.forEach(r => { byName[r.name] = r1((byName[r.name]||0) + calcPt(r)); });
+  const ranked = Object.entries(byName).sort((a,b) => b[1]-a[1]).slice(0,10);
+  const re = document.getElementById('rankingEmpty');
+  if (!ranked.length) { document.getElementById('rankingList').innerHTML=''; re.classList.remove('hidden'); }
+  else {
+    re.classList.add('hidden');
+    const bc = {0:'background:#fef3c7;color:#d97706;',1:'background:#e5e7eb;color:#4b5563;',2:'background:#fed7aa;color:#ea580c;'};
+    document.getElementById('rankingList').innerHTML = ranked.map((r,i) => {
+      const s = bc[i]||'background:var(--gray-100);color:var(--gray-500);';
+      return `<li style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--gray-100);">
+        <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;${s}">${i+1}</div>
+        <div style="flex:1;font-weight:600;">${esc(r[0])}</div>
+        <div style="font-weight:700;color:var(--primary);">${fmt(r[1])}pt</div>
+      </li>`;
+    }).join('');
+  }
+
+  const items = [
+    ['ドコモ光', POINTS.docomo, sum('docomo')],
+    ['auひかり', POINTS.au, sum('au')],
+    ['TCOM光', POINTS.tcom, sum('tcom')],
+    ['LIBMO 20GB以上', POINTS.libmo, totalLibmo],
+    ['　うち 20GB', POINTS.libmo, sum('libmo20')],
+    ['　うち 30GB', POINTS.libmo, sum('libmo30')],
+    ['　うち 60GB', POINTS.libmo, sum('libmo60')],
+  ];
+  document.getElementById('itemBody').innerHTML = items.map(([label,unit,cnt],i) =>
+    `<tr${i>=4?' style="color:var(--gray-500);"':''}><td>${label}</td><td class="text-c">${unit.toFixed(1)}pt</td><td class="text-c fw-b">${cnt}</td><td class="pt-cell">${i>=4?'—':fmt(cnt*unit)}</td></tr>`
+  ).join('');
+  document.getElementById('itemFoot').innerHTML = `<tr style="font-weight:700;background:var(--gray-50);"><td colspan="3">合計</td><td class="pt-cell">${fmt(totalPt)}</td></tr>`;
+}
+
+// ========== JSON ==========
+function exportJSON() {
+  if (!reports.length) { alert('保存するデータがありません'); return; }
+  const blob = new Blob([JSON.stringify(reports,null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`TCOMスタッフ_データ_${new Date().toISOString().slice(0,10)}.json`; a.click();
+  showToast('💾 データを保存しました！');
+}
+function importJSON(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data)) { alert('無効なデータ形式です'); return; }
+      const mode = confirm(`${data.length}件のデータが見つかりました。\n\n[OK] 既存データに追加\n[キャンセル] 既存データを置き換え`);
+      if (mode) {
+        const existIds = new Set(reports.map(r => r.id));
+        const nd = data.filter(r => !existIds.has(r.id));
+        reports = [...reports, ...nd];
+        showToast(`📂 ${nd.length}件を追加しました！`);
+      } else { reports = data; showToast(`📂 ${data.length}件で置き換えました！`); }
+      save(); updateAll(); applyFilter(); updateLive();
+    } catch(err) { alert('読み込み失敗: '+err.message); }
+  };
+  reader.readAsText(file); e.target.value='';
+}
+
+// ========== Utility ==========
+function esc(s) { if(!s)return''; const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+function showToast(msg, warn) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.toggle('warn', !!warn); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),warn?4000:2500); }
+function updateAll() { updateRecent(); updateNameList(); }
+</script>
+</body>
+</html>
